@@ -34,3 +34,28 @@
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* Custom Neon Utilities */
+@utility shadow-neon-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(30, 64, 175, 0.2);
+}
+
+@utility shadow-neon-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4), 0 0 30px rgba(8, 145, 178, 0.2);
+}
+
+@utility shadow-neon-electric {
+  box-shadow: 0 0 15px rgba(224, 242, 254, 0.3), 0 0 30px rgba(56, 189, 248, 0.15);
+}
+
+@utility text-neon-cyan {
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.9), 0 0 25px rgba(6, 182, 212, 0.5), 0 0 50px rgba(8, 145, 178, 0.3);
+}
+
+@utility text-neon-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.9), 0 0 25px rgba(59, 130, 246, 0.5), 0 0 50px rgba(30, 64, 175, 0.3);
+}
+
+@utility text-neon-electric {
+  text-shadow: 0 0 10px rgba(224, 242, 254, 0.95), 0 0 25px rgba(56, 189, 248, 0.6), 0 0 50px rgba(2, 132, 199, 0.3);
+}

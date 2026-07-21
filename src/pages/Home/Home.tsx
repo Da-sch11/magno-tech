@@ -1,858 +1,498 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useSpring,
-  useMotionValue,
-  AnimatePresence,
-} from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  Code2, Cpu, Zap, ArrowRight, Play, Sliders,
-  Shield, Camera, Wrench, Globe, ChevronLeft, ChevronRight, ChevronsDown,
-} from 'lucide-react';
-
-import logo4 from '../../assets/logo4.png';
-
-// ─────────────────────────────────────────────────────────────
-// HOOK — posición de mouse normalizada [-0.5, 0.5] en un elemento
-// ─────────────────────────────────────────────────────────────
-function useMouseInEl<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const onMove = useCallback((e: React.MouseEvent<T>) => {
-    if (!ref.current) return;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    mx.set((e.clientX - left - width / 2) / width);
-    my.set((e.clientY - top - height / 2) / height);
-  }, [mx, my]);
-  const onLeave = useCallback(() => { mx.set(0); my.set(0); }, [mx, my]);
-  return { ref, mx, my, onMove, onLeave };
-}
+import { Smartphone, Laptop, Zap, ArrowRight, Wrench, Code2, Home as HomeIcon } from 'lucide-react';
+import logo5 from '../../assets/logo5.png';
+import imgCelular from '../../assets/celular.jpg';
+import imgDesarrollo from '../../assets/desarrollo.jpg';
+import imgElectri from '../../assets/electri.jpg';
 
 // ─────────────────────────────────────────────────────────────
-// COMPONENTE DE APARICIÓN MULTIDIRECCIONAL (SCATTERED)
+// TYPES
 // ─────────────────────────────────────────────────────────────
-interface ScatterItemProps {
-  active: boolean;
-  xOffset?: number;
-  yOffset?: number;
-  delay?: number;
-  children: React.ReactNode;
-  className?: string;
-}
+type Category = 'celulares' | 'software' | 'electricidad';
 
-function ScatterItem({ active, xOffset = 0, yOffset = 0, delay = 0, children, className = "" }: ScatterItemProps) {
+// ─────────────────────────────────────────────────────────────
+// CINEMATIC BACKGROUNDS - SVGs that define the ambience
+// ─────────────────────────────────────────────────────────────
+function CelularesBackground() {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: xOffset, y: yOffset, scale: 0.95 }}
-      animate={active ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 0, x: xOffset, y: yOffset, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 90, damping: 14, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+      {/* Full real photo — no dark bg */}
+      <img
+        src={imgCelular}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+      {/* Soft dark gradient only on left side to keep text readable */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
+      {/* Bottom fade for dock */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
+
+      {/* Moving data stream streaks */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div key={i}
+          animate={{ x: ['-10%', '110%'], opacity: [0, 0.6, 0] }}
+          transition={{ duration: 6 + i * 1.2, delay: i * 0.8, repeat: Infinity, ease: 'linear' }}
+          style={{ top: `${20 + i * 11}%` }}
+          className="absolute w-32 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+        />
+      ))}
+    </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// LLUVIA DE CÓDIGO — tarjeta Software (azul cobalto)
-// ─────────────────────────────────────────────────────────────
-const CODE_SNIPPETS = [
-  'const app = express();',
-  'app.use(cors({ origin: "*" }));',
-  'db.connect({ uri: process.env.DB });',
-  'router.get("/api/v1/", handler);',
-  'await deploy({ env: "prod" });',
-  '<Landing page={Home} seo={true} />',
-  'npm run build ✓ 42ms',
-  'SELECT * FROM clients WHERE active=1',
-  'git push origin main',
-  'STATUS 200 OK — uptime 99.9%',
-];
-
-function MatrixRain() {
-  const [cols, setCols] = useState<{ chars: string; x: number; speed: number; delay: number }[]>([]);
-  useEffect(() => {
-    setCols(Array.from({ length: 12 }, (_, i) => ({
-      chars: CODE_SNIPPETS[i % CODE_SNIPPETS.length],
-      x: (i / 12) * 100,
-      speed: 3 + Math.random() * 4,
-      delay: Math.random() * 2,
-    })));
-  }, []);
-
+function SoftwareBackground() {
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-      {cols.map((col, i) => (
-        <motion.div
-          key={i}
-          className="absolute top-0 font-mono text-[9px] text-accent/50 whitespace-nowrap leading-4"
-          style={{ left: `${col.x}%` }}
-          animate={{ y: ['-100%', '120%'] }}
-          transition={{ duration: col.speed, delay: col.delay, repeat: Infinity, ease: 'linear' }}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+      {/* Full real photo — no dark bg */}
+      <img
+        src={imgDesarrollo}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+      {/* Soft dark gradient only on left side */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
+      {/* Bottom fade for dock */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
+
+      {/* Floating code particles on top */}
+      {['{}','</>','=>','&&','//','[]'].map((text, i) => (
+        <motion.div key={i}
+          animate={{ y: [0, -25, 0], opacity: [0.2, 0.6, 0.2] }}
+          transition={{ duration: 4 + i * 0.7, delay: i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ left: `${6 + i * 15}%`, top: `${12 + (i % 3) * 24}%` }}
+          className="absolute font-mono text-sm text-blue-200 select-none font-bold drop-shadow-md"
         >
-          {col.chars.split('').map((c, j) => (
-            <div key={j} className="block" style={{ opacity: 0.3 + (j / col.chars.length) * 0.7 }}>
-              {c}
-            </div>
-          ))}
+          {text}
         </motion.div>
       ))}
+
+      {/* Pulse line */}
       <motion.div
-        className="absolute inset-0 flex items-center justify-center"
-        initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-      >
-        <span className="text-5xl font-black text-accent drop-shadow-[0_0_20px_#1E40AF]">&lt;/&gt;</span>
-      </motion.div>
+        animate={{ x: ['-5%', '105%'], opacity: [0, 0.7, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        className="absolute top-1/2 left-0 w-40 h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent"
+      />
     </div>
   );
 }
 
-function SoftwareCard() {
-  const [hovered, setHovered] = useState(false);
+function ElectricidadBackground() {
   return (
-    <motion.div
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      whileHover={{ y: -6, scale: 1.02 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      className="relative flex flex-col justify-between rounded-3xl border border-card-border bg-card p-7 h-[52vh] cursor-pointer overflow-hidden group shadow-sm"
-    >
-      <AnimatePresence>
-        {hovered && (
-          <motion.div key="rain-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-ink/95 z-0">
-            <MatrixRain />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <motion.div animate={{ opacity: hovered ? 1 : 0 }} className="absolute inset-0 rounded-3xl border-2 border-accent/50 pointer-events-none z-20" />
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+      {/* Full real photo — no dark bg */}
+      <img
+        src={imgElectri}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+      {/* Soft dark gradient only on left side */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
+      {/* Bottom fade for dock */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
 
-      <div className="relative z-10 flex justify-between items-start">
-        <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full border border-card-border bg-beige text-muted">Software</span>
-        <Code2 className={`h-6 w-6 transition-colors duration-300 ${hovered ? 'text-white' : 'text-muted'}`} />
-      </div>
+      {/* Lightning bolt particles */}
+      {[...Array(5)].map((_, i) => (
+        <motion.div key={i}
+          animate={{ y: [0, -18, 0], opacity: [0.2, 0.55, 0.2] }}
+          transition={{ duration: 3 + i * 0.8, delay: i * 0.6, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ left: `${10 + i * 18}%`, top: `${20 + (i % 3) * 20}%` }}
+          className="absolute text-cyan-200 text-base drop-shadow-md"
+        >
+          ⚡
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
-      <div className="relative z-10 flex justify-center items-center flex-1">
-        <motion.div animate={hovered ? { opacity: 0, scale: 0.7 } : { opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
-          <div className="w-16 h-16 rounded-2xl bg-beige border border-card-border flex items-center justify-center">
-            <Code2 className="h-8 w-8 text-muted" />
+// ─────────────────────────────────────────────────────────────
+// DEVICE MOCKUPS (positioned on the RIGHT)
+// ─────────────────────────────────────────────────────────────
+function CelularesDevice() {
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Glow Halo */}
+      <div className="absolute inset-0 rounded-full bg-cyan-500/15 blur-3xl scale-125 pointer-events-none" />
+
+      {/* Phone Shell */}
+      <div className="relative w-[200px] h-[400px] bg-neutral-950 border-[5px] border-neutral-800 rounded-[46px] shadow-2xl p-2.5 flex flex-col overflow-hidden">
+        {/* Dynamic Island */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-[22px] bg-black rounded-full z-30 flex items-center justify-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-neutral-900 border border-neutral-800">
+            <div className="w-1.5 h-1.5 m-auto mt-0.5 rounded-full bg-blue-900 opacity-60" />
           </div>
-        </motion.div>
-      </div>
-
-      <div className="relative z-10">
-        <h3 className={`text-xl font-bold uppercase tracking-wide mb-1 transition-colors duration-300 ${hovered ? 'text-white' : 'text-ink'}`}>Software</h3>
-        <p className={`text-[11px] leading-relaxed transition-colors duration-300 ${hovered ? 'text-gray-300' : 'text-muted'}`}>Landing pages, sistemas SaaS y e-commerce a medida.</p>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// TARJETA HARDWARE — parallax 3D + capas
-// ─────────────────────────────────────────────────────────────
-function HardwareCard() {
-  const { ref, mx, my, onMove, onLeave } = useMouseInEl<HTMLDivElement>();
-  const [hovered, setHovered] = useState(false);
-
-  const rotX = useSpring(useTransform(my, [-0.5, 0.5], [12, -12]), { damping: 20, stiffness: 130 });
-  const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-12, 12]), { damping: 20, stiffness: 130 });
-  const imgX = useSpring(useTransform(mx, [-0.5, 0.5], [-14, 14]), { damping: 18, stiffness: 120 });
-  const imgY = useSpring(useTransform(my, [-0.5, 0.5], [-10, 10]), { damping: 18, stiffness: 120 });
-  const fxX  = useSpring(useTransform(mx, [-0.5, 0.5], [10, -10]), { damping: 18, stiffness: 120 });
-  const fxY  = useSpring(useTransform(my, [-0.5, 0.5], [8, -8]),  { damping: 18, stiffness: 120 });
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={onMove}
-      onMouseLeave={() => { onLeave(); setHovered(false); }}
-      onMouseEnter={() => setHovered(true)}
-      style={{ rotateX: rotX, rotateY: rotY, transformStyle: 'preserve-3d' }}
-      whileHover={{ y: -6 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      className="relative flex flex-col justify-between rounded-3xl border border-card-border bg-card p-7 h-[52vh] cursor-pointer overflow-hidden group [perspective:800px] shadow-sm"
-    >
-      <motion.div style={{ x: fxX, y: fxY }} className="absolute inset-0 bg-[linear-gradient(to_right,#00000006_1px,transparent_1px),linear-gradient(to_bottom,#00000006_1px,transparent_1px)] bg-[size:22px_22px] pointer-events-none" />
-      <AnimatePresence>
-        {hovered && <motion.div key="glow" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 rounded-3xl border-2 border-accent/40 pointer-events-none z-20" />}
-      </AnimatePresence>
-
-      <div className="relative z-10 flex justify-between items-start">
-        <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full border border-card-border bg-beige text-muted">Hardware</span>
-        <Cpu className={`h-6 w-6 transition-colors duration-300 ${hovered ? 'text-accent' : 'text-muted'}`} />
-      </div>
-
-      <div className="relative z-10 flex-1 flex items-center justify-center [transform-style:preserve-3d]">
-        <motion.div style={{ x: imgX, y: imgY, translateZ: hovered ? 28 : 0 }} className="relative">
-          <img src={logo4} alt="Hardware" className="h-32 w-auto object-contain drop-shadow-2xl" style={{ filter: hovered ? 'drop-shadow(0 0 18px rgba(30,64,175,0.4))' : 'none' }} />
-          <AnimatePresence>
-            {hovered && (
-              <>
-                <motion.div key="c1" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }} className="absolute -top-3 -right-3 w-6 h-6 rounded-md bg-beige border border-accent/40 flex items-center justify-center">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-accent/70 animate-pulse" />
-                </motion.div>
-                <motion.div key="c2" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }} exit={{ opacity: 0, scale: 0 }} className="absolute -bottom-2 -left-3 w-5 h-5 rounded-md bg-beige border border-accent/30 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-sm bg-accent/50 animate-pulse" />
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-
-      <div className="relative z-10">
-        <h3 className={`text-xl font-bold uppercase tracking-wide mb-1 transition-colors duration-300 ${hovered ? 'text-accent' : 'text-ink'}`}>Hardware</h3>
-        <p className="text-muted text-[11px] leading-relaxed">Reparaciones, repuestos y accesorios para tus dispositivos.</p>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// TARJETA ELECTRICIDAD — flicker + cámara sigue el mouse
-// ─────────────────────────────────────────────────────────────
-function ElectricidadCard() {
-  const { ref, mx, my, onMove, onLeave } = useMouseInEl<HTMLDivElement>();
-  const [phase, setPhase] = useState<'off' | 'flicker' | 'on'>('off');
-
-  const camX = useSpring(useTransform(mx, [-0.5, 0.5], [-12, 12]), { damping: 18, stiffness: 90 });
-  const camY = useSpring(useTransform(my, [-0.5, 0.5], [-6, 6]),  { damping: 18, stiffness: 90 });
-
-  const enter = () => { setPhase('flicker'); setTimeout(() => setPhase('on'), 800); };
-  const leave = () => { setPhase('off'); onLeave(); };
-  const FLICKER = [0, 0.7, 0.1, 0.9, 0, 0.6, 0.05, 1];
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseEnter={enter}
-      onMouseLeave={leave}
-      onMouseMove={onMove}
-      whileHover={{ y: -6 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      className="relative flex flex-col justify-between rounded-3xl border border-card-border bg-card p-7 h-[52vh] cursor-pointer overflow-hidden group shadow-sm"
-    >
-      <motion.div animate={{ opacity: phase === 'off' ? 0.15 : 0 }} transition={{ duration: 0.3 }} className="absolute inset-0 bg-gray-200/50 pointer-events-none z-0" />
-      {phase === 'flicker' && (
-        <motion.div animate={{ opacity: FLICKER }} transition={{ duration: 0.8, times: [0, .12, .25, .38, .50, .63, .75, 1] }} className="absolute inset-0 bg-accent/5 pointer-events-none z-0" />
-      )}
-      {phase === 'on' && (
-        <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: [0.04, 0.10, 0.04] }} transition={{ duration: 2.8, repeat: Infinity }} className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(30,64,175,0.10),transparent_65%)] pointer-events-none z-0" />
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 rounded-3xl border-2 border-accent/40 pointer-events-none z-20" />
-        </>
-      )}
-
-      <div className="relative z-10 flex justify-between items-start">
-        <span className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full border border-card-border bg-beige text-muted">Electricidad</span>
-        <motion.div animate={phase === 'on' ? { filter: ['drop-shadow(0 0 4px #1E40AF)', 'drop-shadow(0 0 12px #1E40AF)', 'drop-shadow(0 0 4px #1E40AF)'] } : {}} transition={{ duration: 2, repeat: Infinity }}>
-          <Zap className={`h-6 w-6 transition-colors duration-300 ${phase !== 'off' ? 'text-accent' : 'text-muted'}`} />
-        </motion.div>
-      </div>
-
-      <div className="relative z-10 flex-1 flex items-center justify-center">
-        <div className="relative">
-          <img src={logo4} alt="Electricidad" className="h-32 w-auto object-contain transition-all duration-500" style={{ filter: phase === 'off' ? 'grayscale(40%) brightness(0.85)' : 'grayscale(0%) brightness(1) drop-shadow(0 0 16px rgba(30,64,175,0.3))' }} />
-          <AnimatePresence>
-            {phase === 'on' && (
-              <motion.div key="cam" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} style={{ x: camX, y: camY }} className="absolute -top-6 -right-6 flex items-center gap-1">
-                <div className="w-1.5 h-6 bg-gray-400 rounded-sm" />
-                <div className="w-12 h-8 bg-gradient-to-r from-gray-200 to-gray-300 border border-gray-300 rounded-lg flex items-center justify-center relative">
-                  <div className="w-6 h-6 rounded-full border-2 border-gray-400 bg-white flex items-center justify-center">
-                    <motion.div animate={{ scale: [0.7, 0.9, 0.7] }} transition={{ duration: 1.6, repeat: Infinity }} className="w-3 h-3 rounded-full bg-accent shadow-[0_0_8px_#1E40AF]" />
-                  </div>
-                  <motion.div animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.2, repeat: Infinity }} className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_4px_#1E40AF]" />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-      </div>
 
-      <div className="relative z-10">
-        <h3 className={`text-xl font-bold uppercase tracking-wide mb-1 transition-colors duration-300 ${phase !== 'off' ? 'text-accent' : 'text-ink'}`}>Electricidad y CCTV</h3>
-        <p className="text-muted text-[11px] leading-relaxed">Instalaciones eléctricas, cámaras de seguridad y cableado estructurado.</p>
-      </div>
-    </motion.div>
-  );
-}
+        {/* Screen */}
+        <div className="flex-grow rounded-[36px] relative overflow-hidden flex flex-col items-end justify-end border border-neutral-900/50">
+          {/* celular.jpg fills the screen */}
+          <img
+            src={imgCelular}
+            alt="Reparación Celular"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-// ─────────────────────────────────────────────────────────────
-// PANEL 0 — HERO
-// ─────────────────────────────────────────────────────────────
-function HeroPanel({ active }: { active: boolean }) {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center px-6">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_40%,rgba(30,64,175,0.06),transparent)] pointer-events-none" />
-      <div className="w-full max-w-6xl flex flex-col gap-7 relative z-10">
-        <div className="text-center space-y-3">
-          <ScatterItem active={active} yOffset={-60} delay={0.05}>
-            <div className="inline-flex items-center gap-2 bg-card border border-card-border rounded-full px-4 py-1.5 text-[10px] font-bold text-accent uppercase tracking-widest shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              Resolución Técnica 360°
+          {/* Scanning Line */}
+          <motion.div
+            animate={{ y: ['-100%', '200%'] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+            className="absolute left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_10px_rgba(6,182,212,0.9)] z-10 pointer-events-none"
+          />
+
+          {/* Corner tech brackets */}
+          <div className="absolute top-6 left-4 w-5 h-5 border-t border-l border-cyan-400/50 z-10 pointer-events-none" />
+          <div className="absolute top-6 right-4 w-5 h-5 border-t border-r border-cyan-400/50 z-10 pointer-events-none" />
+
+          {/* Status bar at bottom */}
+          <div className="relative z-10 w-full px-4 py-4 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping block" />
+              <span className="text-[8px] font-mono text-cyan-300 font-bold tracking-widest uppercase">Screen Repaired</span>
             </div>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={-80} delay={0.1}>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-ink uppercase tracking-tight leading-none">
-              Magno <span className="text-accent">Tech</span>
-            </h1>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={80} delay={0.15}>
-            <p className="text-muted text-sm max-w-lg mx-auto">
-              Software · Hardware · Electricidad — todo en un solo lugar.
-            </p>
-          </ScatterItem>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <ScatterItem active={active} xOffset={-120} delay={0.2}>
-            <SoftwareCard />
-          </ScatterItem>
-          <ScatterItem active={active} yOffset={120} delay={0.25}>
-            <HardwareCard />
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={120} delay={0.3}>
-            <ElectricidadCard />
-          </ScatterItem>
-        </div>
-        <ScatterItem active={active} yOffset={50} delay={0.4} className="flex justify-center">
-          <div className="flex flex-col items-center gap-1.5 text-muted text-[10px] uppercase tracking-widest font-semibold">
-            <span>Scroll para explorar</span>
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              className="text-accent"
-            >
-              <ChevronsDown className="h-5 w-5" />
-            </motion.div>
+            <span className="text-[7px] font-mono text-neutral-400">Touch OK · Glass Grade A+</span>
           </div>
-        </ScatterItem>
+        </div>
+
+        {/* Home Indicator */}
+        <div className="mx-auto mt-2 w-20 h-1 rounded-full bg-neutral-700" />
+      </div>
+    </div>
+  );
+}
+
+function SoftwareDevice() {
+  return (
+    <div className="relative flex flex-col items-center">
+      {/* Glow Halo */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 w-72 h-44 bg-blue-600/15 blur-3xl rounded-full pointer-events-none" />
+
+      {/* Laptop Lid (screen) */}
+      <div className="relative w-[340px] h-[215px] bg-neutral-950 border-4 border-neutral-800 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        {/* Window controls bar */}
+        <div className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900/90 border-b border-neutral-800 flex-shrink-0 z-10">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+          <div className="flex-1 bg-neutral-800 rounded h-4 mx-2 flex items-center px-2">
+            <span className="text-[7px] text-neutral-500 font-mono truncate">magnotech.dev</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-[6px] text-green-400 font-mono font-bold">LIVE</span>
+          </div>
+        </div>
+
+        {/* Screen body — desarrollo.jpg as background */}
+        <div className="flex-grow relative overflow-hidden">
+          <img
+            src={imgDesarrollo}
+            alt="Desarrollo de Software"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          {/* Code overlay tint */}
+          <div className="absolute inset-0 bg-black/55" />
+          {/* Floating code lines overlay */}
+          <div className="absolute inset-0 p-3 font-mono text-[7px] text-blue-300/70 space-y-0.5 overflow-hidden z-10">
+            <p className="text-neutral-500">{`// Magno Tech Dev`}</p>
+            <p><span className="text-pink-400">import</span> <span className="text-white">{`{ motion }`}</span> <span className="text-pink-400">from</span> <span className="text-yellow-400">'framer-motion'</span>;</p>
+            <p><span className="text-purple-400">const</span> <span className="text-yellow-300">MagnoApp</span> = () <span className="text-pink-400">=&gt;</span> {'{'}</p>
+            <p>&nbsp;&nbsp;<span className="text-pink-400">return</span> <span className="text-cyan-400">&lt;MagnoTechPage /&gt;</span>;</p>
+            <p>{'}'};</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Base / hinge */}
+      <div className="w-[360px] h-2.5 bg-neutral-800 border-t border-neutral-700 rounded-b-xl" />
+      <div className="w-[380px] h-2 bg-neutral-700 rounded-b-full mx-auto shadow mt-0.5" />
+    </div>
+  );
+}
+
+function ElectricidadDevice() {
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Glow Halo */}
+      <div className="absolute inset-0 rounded-full bg-cyan-400/10 blur-3xl scale-150 pointer-events-none" />
+
+      {/* Smart House container with real image */}
+      <div className="relative w-[280px] h-[300px] rounded-3xl overflow-hidden border-2 border-cyan-500/20 shadow-2xl">
+        {/* Real electri.jpg image */}
+        <img
+          src={imgElectri}
+          alt="Casa Inteligente"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
+
+        {/* Neon circuit overlay on top */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 280 300" fill="none">
+          {/* Corner tech brackets */}
+          <path d="M 10 30 L 10 10 L 30 10" stroke="rgba(6,182,212,0.6)" strokeWidth="2" />
+          <path d="M 250 10 L 270 10 L 270 30" stroke="rgba(6,182,212,0.6)" strokeWidth="2" />
+          <path d="M 10 270 L 10 290 L 30 290" stroke="rgba(6,182,212,0.6)" strokeWidth="2" />
+          <path d="M 250 290 L 270 290 L 270 270" stroke="rgba(6,182,212,0.6)" strokeWidth="2" />
+          {/* Energy connection lines */}
+          <path d="M 0 200 L 50 200 L 60 180" stroke="rgba(6,182,212,0.3)" strokeWidth="1" strokeDasharray="5 3" />
+          <path d="M 280 200 L 230 200 L 220 180" stroke="rgba(6,182,212,0.3)" strokeWidth="1" strokeDasharray="5 3" />
+        </svg>
+
+        {/* Logo5 top-center badge */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-12 h-12 rounded-2xl bg-black/50 border border-cyan-500/40 backdrop-blur-md p-2 flex items-center justify-center shadow-lg shadow-cyan-500/20 z-10">
+          <img src={logo5} alt="Logo" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(6,182,212,0.7)]" />
+        </div>
+
+        {/* Smart Home status chips at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-10 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse block" />
+            <span className="text-[8px] font-mono text-cyan-300 font-bold tracking-widest uppercase">Smart Home Online</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[7px] bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-full font-mono">SOLAR ✓</span>
+            <span className="text-[7px] bg-blue-500/20 border border-blue-500/30 text-blue-300 px-2 py-0.5 rounded-full font-mono">CCTV ✓</span>
+          </div>
+        </div>
+
+        {/* Pulsing scan frame */}
+        <motion.div
+          animate={{ opacity: [0.2, 0.7, 0.2] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-3 rounded-2xl border border-cyan-400/25 pointer-events-none z-10"
+        />
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// PANEL 1 — SOFTWARE
+// INFO PANEL (shown on the LEFT)
 // ─────────────────────────────────────────────────────────────
-const SW_SLIDES = [
-  { num: '01', tag: 'Landing Pages',  title: 'Tu negocio en la web,\nimpecable',    body: 'Páginas de aterrizaje de alto impacto, rápidas y SEO-optimizadas.', badge: 'Desde $299',  link: '/software/web' },
-  { num: '02', tag: 'Sistemas SaaS',  title: 'Automatiza tus\noperaciones',          body: 'Plataformas SaaS con paneles administrativos y APIs RESTful escalables.', badge: 'Cloud Ready', link: '/software/saas' },
-  { num: '03', tag: 'E-Commerce',     title: 'Vende sin límites\nen línea',           body: 'Tiendas integradas con pasarelas de pago y dashboards en tiempo real.', badge: 'Multi-divisa', link: '/software/web' },
-];
+const categoryInfo = {
+  celulares: {
+    tag: '01 / Celulares',
+    title: 'Reparación\nExperta',
+    subtitle: 'Diagnóstico técnico + reparaciones de pantalla, glass, batería y microelectrónica.',
+    feats: ['Cambio de Pantalla', 'Batería Original', 'Glass Trasero', 'Microsoldadura'],
+    link: '/hardware/reparaciones',
+    cta: 'Conoce las Reparaciones',
+    accentColor: 'text-cyan-400',
+    badgeBg: 'bg-cyan-400/10 border-cyan-500/25 text-cyan-400',
+    ctaGradient: 'from-cyan-600 to-blue-600 shadow-cyan-500/20',
+    tagColor: 'text-cyan-500',
+    icon: Wrench,
+  },
+  software: {
+    tag: '02 / Desarrollo de Software',
+    title: 'Tu Negocio\nDigital',
+    subtitle: 'Sistemas web a medida, SaaS escalables y experiencias digitales de alto impacto.',
+    feats: ['Landing Pages', 'SaaS Platforms', 'E-Commerce', 'API RESTful'],
+    link: '/software/web',
+    cta: 'Ver Proyectos Web',
+    accentColor: 'text-blue-400',
+    badgeBg: 'bg-blue-500/10 border-blue-500/25 text-blue-400',
+    ctaGradient: 'from-blue-600 to-indigo-600 shadow-blue-500/20',
+    tagColor: 'text-blue-500',
+    icon: Code2,
+  },
+  electricidad: {
+    tag: '03 / Electricidad & CCTV',
+    title: 'Hogares\nInteligentes',
+    subtitle: 'Instalaciones eléctricas normadas, videovigilancia 4K y domótica para tu hogar.',
+    feats: ['Tableros SEC', 'CCTV 4K IA', 'Domótica Smart', 'Cableado Cat6A'],
+    link: '/electricidad/instalaciones',
+    cta: 'Ver Instalaciones',
+    accentColor: 'text-sky-400',
+    badgeBg: 'bg-sky-400/10 border-sky-500/25 text-sky-400',
+    ctaGradient: 'from-cyan-600 to-sky-600 shadow-sky-500/20',
+    tagColor: 'text-sky-400',
+    icon: HomeIcon,
+  },
+};
 
-function SoftwarePanel({ active, scrollProgress }: { active: boolean; scrollProgress: number }) {
-  const op0 = (p: number) => p < 0.28 ? 1 : p < 0.38 ? 1 - (p - 0.28) / 0.10 : 0;
-  const op1 = (p: number) => p < 0.28 ? 0 : p < 0.38 ? (p - 0.28) / 0.10 : p < 0.62 ? 1 : p < 0.72 ? 1 - (p - 0.62) / 0.10 : 0;
-  const op2 = (p: number) => p < 0.62 ? 0 : p < 0.72 ? (p - 0.62) / 0.10 : 1;
+// ─────────────────────────────────────────────────────────────
+// CATEGORY BACKGROUNDS Map
+// ─────────────────────────────────────────────────────────────
+const BG_GRADIENT: Record<Category, string> = {
+  celulares:    'from-blue-950/60 via-[#08090d] to-[#08090d]',
+  software:     'from-indigo-950/50 via-[#08090d] to-[#08090d]',
+  electricidad: 'from-cyan-950/50 via-[#08090d] to-[#08090d]',
+};
 
-  const slideOpacities = [op0(scrollProgress), op1(scrollProgress), op2(scrollProgress)];
-  const activeSlide = scrollProgress < 0.38 ? 0 : scrollProgress < 0.72 ? 1 : 2;
+// ─────────────────────────────────────────────────────────────
+// MAIN HOME COMPONENT
+// ─────────────────────────────────────────────────────────────
+export default function Home() {
+  const [activeCategory, setActiveCategory] = useState<Category>('celulares');
 
-  const mockOp = scrollProgress < 0.12 ? scrollProgress / 0.12 : scrollProgress > 0.88 ? 1 - (scrollProgress - 0.88) / 0.12 : 1;
-
-  const slideDirections = [
-    { x: -80, y: 0 },
-    { x: 0, y: 80 },
-    { x: 80, y: 0 },
+  const menuItems = [
+    { id: 'celulares'    as Category, label: 'Celulares',               shortLabel: 'Celulares',  icon: Smartphone },
+    { id: 'software'     as Category, label: 'Desarrollo de Software',  shortLabel: 'Software',   icon: Laptop },
+    { id: 'electricidad' as Category, label: 'Electricidad',            shortLabel: 'Eléctrica',  icon: Zap },
   ];
 
+  const info = categoryInfo[activeCategory];
+
   return (
-    <div className="absolute inset-0 flex items-center justify-center px-6">
-      <div className="absolute inset-0 bg-[radial-gradient(#00000008_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
-      <div className="w-full max-w-6xl grid md:grid-cols-2 gap-12 items-center">
+    <div className="relative min-h-[calc(100vh-4rem)] bg-black text-white flex flex-col overflow-hidden font-sans">
+      {/* ── FULL IMAGE BACKGROUND ── */}
+      <AnimatePresence mode="wait">
+        <motion.div key={`bg-${activeCategory}`}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          className="absolute inset-0 pointer-events-none z-0"
+        >
+          {activeCategory === 'celulares'    && <CelularesBackground />}
+          {activeCategory === 'software'     && <SoftwareBackground />}
+          {activeCategory === 'electricidad' && <ElectricidadBackground />}
+        </motion.div>
+      </AnimatePresence>
 
-        <div className="relative h-[44vh] flex items-center">
-          {SW_SLIDES.map((s, i) => {
-            const isSlideActive = active && activeSlide === i;
-            const dir = slideDirections[i];
-            return (
-              <div key={i} className="absolute inset-0 flex flex-col justify-center gap-5 text-left transition-opacity duration-300" style={{ opacity: slideOpacities[i], pointerEvents: isSlideActive ? 'auto' : 'none' }}>
-                <ScatterItem active={isSlideActive} yOffset={-30} delay={0.05}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-black text-accent tracking-widest uppercase">{s.num}</span>
-                    <div className="h-px w-8 bg-accent/30" />
-                    <span className="text-[9px] font-bold text-muted uppercase tracking-widest">{s.tag}</span>
-                  </div>
-                </ScatterItem>
-                <ScatterItem active={isSlideActive} xOffset={dir.x} yOffset={dir.y} delay={0.1}>
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-ink leading-tight uppercase whitespace-pre-line">{s.title}</h2>
-                </ScatterItem>
-                <ScatterItem active={isSlideActive} xOffset={-dir.x} yOffset={-dir.y} delay={0.15}>
-                  <p className="text-sm text-muted leading-relaxed max-w-sm">{s.body}</p>
-                </ScatterItem>
-                <ScatterItem active={isSlideActive} yOffset={30} delay={0.2}>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-bold text-accent uppercase tracking-widest bg-accent/10 border border-accent/20 px-3 py-1 rounded-full">{s.badge}</span>
-                    <Link to={s.link} className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-accent transition-colors group">
-                      Ver más <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                </ScatterItem>
-              </div>
-            );
-          })}
-        </div>
+      {/* ── MAIN CONTENT: Left info + Right device ── */}
+      <div className="relative z-10 flex-grow flex items-center justify-center px-6 md:px-12 lg:px-20 py-8">
+        <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
 
-        {/* Mockup laptop */}
-        <ScatterItem active={active} xOffset={150} className="flex justify-center items-center">
-          <div className="relative w-full max-w-[360px]" style={{ opacity: mockOp }}>
-            <div className="bg-white border border-card-border rounded-t-2xl aspect-[16/10] w-full overflow-hidden relative shadow-lg">
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 border-b border-card-border">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
-                <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                <div className="w-2 h-2 rounded-full bg-green-400" />
-                <div className="flex-1 bg-gray-100 rounded-full h-4 mx-2 flex items-center px-2">
-                  <span className="text-[7px] text-muted font-mono truncate">
-                    https://proservicephone.com/{SW_SLIDES[activeSlide].tag.toLowerCase().replace(' ', '-')}
-                  </span>
+          {/* ── LEFT PANEL — Info ── */}
+          <div className="flex-1 flex flex-col gap-6 text-left order-2 lg:order-1">
+            <AnimatePresence mode="wait">
+              <motion.div key={`info-${activeCategory}`}
+                initial={{ opacity: 0, x: -40, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, x: -30, filter: 'blur(6px)' }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="flex flex-col gap-5"
+              >
+                {/* Category Tag */}
+                <div className={`inline-flex items-center gap-2 self-start text-[10px] font-bold uppercase tracking-widest ${info.tagColor}`}>
+                  <info.icon className="w-3.5 h-3.5" />
+                  <span>{info.tag}</span>
                 </div>
-              </div>
-              <div className="p-4 h-full bg-gradient-to-br from-gray-50 to-white flex flex-col gap-2">
-                <div className="w-3/4 h-2.5 bg-gray-200 rounded animate-pulse" />
-                <div className="w-1/2 h-2 bg-gray-100 rounded" />
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map(j => (
-                    <div key={j} className="aspect-square rounded-lg bg-gray-100 overflow-hidden border border-card-border">
-                      <img src={logo4} alt="" className="w-full h-full object-cover object-center opacity-60" />
-                    </div>
+
+                {/* Title */}
+                <h1
+                  className="text-4xl md:text-5xl xl:text-6xl font-black uppercase leading-[1.05] tracking-tight text-white whitespace-pre-line"
+                  style={{ textShadow: '0 2px 20px rgba(0,0,0,0.9), 0 1px 6px rgba(0,0,0,0.8)' }}
+                >
+                  {info.title}
+                  <span className={`block ${info.accentColor}`}
+                    style={{ textShadow: activeCategory === 'celulares'
+                      ? '0 0 20px rgba(6,182,212,0.8), 0 0 50px rgba(6,182,212,0.4), 0 2px 16px rgba(0,0,0,0.9)'
+                      : activeCategory === 'software'
+                      ? '0 0 20px rgba(59,130,246,0.8), 0 0 50px rgba(59,130,246,0.4), 0 2px 16px rgba(0,0,0,0.9)'
+                      : '0 0 20px rgba(56,189,248,0.8), 0 0 50px rgba(56,189,248,0.4), 0 2px 16px rgba(0,0,0,0.9)' }}
+                  >
+                    Magno Tech
+                  </span>
+                </h1>
+
+                {/* Subtitle */}
+                <p
+                  className="text-neutral-200 text-sm md:text-base leading-relaxed max-w-sm"
+                  style={{ textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}
+                >
+                  {info.subtitle}
+                </p>
+
+                {/* Feature Pills */}
+                <div className="flex flex-wrap gap-2">
+                  {info.feats.map((feat) => (
+                    <span key={feat} className={`px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${info.badgeBg}`}>
+                      {feat}
+                    </span>
                   ))}
                 </div>
-                <div className="mt-2 space-y-1.5">
-                  <div className="h-1.5 bg-gray-100 rounded w-full" />
-                  <div className="h-1.5 bg-gray-100 rounded w-5/6" />
-                </div>
-                <div className="mt-auto flex gap-2">
-                  <div className="h-6 w-20 bg-accent/80 rounded-lg" />
-                  <div className="h-6 w-16 bg-gray-200 rounded-lg" />
-                </div>
-              </div>
-            </div>
-            <div className="h-3 w-[108%] -ml-[4%] bg-gradient-to-b from-gray-300 to-gray-400 rounded-b-xl border border-gray-300">
-              <div className="mx-auto w-12 h-[2px] bg-gray-500 rounded-b" />
-            </div>
-            <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute -bottom-8 -right-6 w-20 h-20 drop-shadow-2xl">
-              <img src={logo4} alt="" className="w-full h-full object-contain" />
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* CTA — "Conoce más Servicios" */}
+            <AnimatePresence mode="wait">
+              <motion.div key={`cta-${activeCategory}`}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ delay: 0.15, duration: 0.45, ease: 'easeOut' }}
+                className="flex flex-col sm:flex-row items-start gap-3 mt-2"
+              >
+                {/* Primary CTA */}
+                <Link to={info.link}
+                  className={`group inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r ${info.ctaGradient} text-white font-bold text-sm shadow-lg hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 focus:outline-none`}
+                >
+                  <span>{info.cta}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                {/* Secondary "Conoce más Servicios" */}
+                <Link to="/sobre-nosotros"
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-neutral-900/60 backdrop-blur-sm border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 font-semibold text-sm transition-all duration-300 focus:outline-none active:scale-[0.98]"
+                >
+                  <span>Sobre Nosotros</span>
+                </Link>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </ScatterItem>
-      </div>
-    </div>
-  );
-}
 
-// ─────────────────────────────────────────────────────────────
-// PANEL 2 — HARDWARE
-// ─────────────────────────────────────────────────────────────
-const HW_ITEMS = [
-  { label: 'Cambio de pantalla',    sub: 'iPhone 14 Pro Max' },
-  { label: 'Batería original',      sub: 'Samsung Galaxy S23' },
-  { label: 'Cargador 65W GaN',      sub: 'Universal USB-C' },
-  { label: 'Microsoldadura',        sub: 'Placa base dañada' },
-  { label: 'Cámara principal',      sub: 'Pixel 7 – Sensor Sony' },
-  { label: 'Cristal trasero láser', sub: 'iPhone 13 – Grado A+' },
-];
-
-const ScreenCrack = () => (
-  <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-gray-400" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <circle cx="40" cy="38" r="1.5" fill="#6B7280" />
-    <path d="M 40 38 L 3 10"  strokeWidth="1" />
-    <path d="M 40 38 L 90 5"  strokeWidth="1.2" />
-    <path d="M 40 38 L 96 65" strokeWidth="0.8" />
-    <path d="M 40 38 L 28 96" strokeWidth="1.1" />
-    <path d="M 40 38 L 5 80"  strokeWidth="0.9" />
-    <path d="M 40 38 L 70 90" strokeWidth="0.9" />
-    <path d="M 30 28 A 14 14 0 0 1 54 30 A 14 14 0 0 1 46 48 A 14 14 0 0 1 28 43 Z" fill="none" strokeWidth="0.6" strokeDasharray="3 2" />
-  </svg>
-);
-
-function BeforeAfterSlider({ pos, setPos }: { pos: number; setPos: (v: number) => void }) {
-  return (
-    <div className="relative w-full max-w-[180px] aspect-[9/18] mx-auto rounded-[28px] border-[5px] border-gray-300 overflow-hidden select-none shadow-xl">
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-2.5 bg-gray-400 rounded-full z-30" />
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-white flex flex-col items-center justify-center gap-3 p-4">
-        <span className="text-[8px] font-bold text-green-600 bg-green-50 border border-green-200 px-2.5 py-0.5 rounded-full uppercase">Reparado ✓</span>
-        <img src={logo4} alt="" className="h-20 w-auto object-contain drop-shadow-xl" />
-        <div className="w-full bg-gray-200 h-1 rounded-full"><div className="bg-green-500 h-full w-full animate-pulse rounded-full" /></div>
-        <span className="text-[7px] text-muted font-mono">Pantalla nueva — Grado A+</span>
-      </div>
-      <div style={{ clipPath: `polygon(0 0, ${pos}% 0, ${pos}% 100%, 0 100%)` }} className="absolute inset-0 bg-gradient-to-b from-gray-200 to-gray-100 flex flex-col items-center justify-center gap-3 p-4 z-10">
-        <span className="text-[8px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full uppercase">Dañado</span>
-        <div className="relative h-20 flex items-center">
-          <img src={logo4} alt="" className="h-20 w-auto object-contain opacity-50 grayscale" />
-          <ScreenCrack />
-        </div>
-        <div className="w-full bg-gray-300 h-1 rounded-full"><div className="bg-red-400 h-full w-1/4 rounded-full" /></div>
-        <span className="text-[7px] text-muted font-mono">Cristal dañado — táctil falla</span>
-      </div>
-      <div style={{ left: `${pos}%` }} className="absolute inset-y-0 w-[2px] bg-accent shadow-[0_0_10px_#1E40AF] z-20 pointer-events-none" />
-      <div style={{ left: `${pos}%` }} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-accent border-2 border-white flex items-center justify-center z-20 pointer-events-none shadow-lg">
-        <Sliders className="h-3 w-3 text-white" />
-      </div>
-      <input type="range" min="0" max="100" value={pos} onChange={e => setPos(+e.target.value)} className="absolute inset-0 opacity-0 cursor-ew-resize z-40" />
-    </div>
-  );
-}
-
-function HwCarousel() {
-  const [idx, setIdx] = useState(0);
-  const total = HW_ITEMS.length;
-  const prev = () => setIdx(i => (i - 1 + total) % total);
-  const next = () => setIdx(i => (i + 1) % total);
-
-  useEffect(() => {
-    const t = setInterval(next, 2800);
-    return () => clearInterval(t);
-  }, []);
-
-  const visible = [0, 1, 2].map(o => HW_ITEMS[(idx + o) % total]);
-
-  return (
-    <div className="relative w-full">
-      <div className="grid grid-cols-3 gap-2 overflow-hidden">
-        <AnimatePresence mode="popLayout">
-          {visible.map((item, i) => (
-            <motion.div key={`${idx}-${i}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.35, delay: i * 0.05 }}
-              className="bg-beige border border-card-border rounded-2xl p-3 flex flex-col items-center gap-2 text-center group hover:border-accent/30 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-white overflow-hidden flex items-center justify-center border border-card-border">
-                <img src={logo4} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-ink leading-tight">{item.label}</p>
-                <p className="text-[7px] text-muted mt-0.5">{item.sub}</p>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-      <div className="flex justify-center gap-2 mt-3">
-        <button onClick={prev} className="w-6 h-6 rounded-full bg-white hover:bg-accent/10 border border-card-border flex items-center justify-center transition-colors"><ChevronLeft className="h-3 w-3 text-muted" /></button>
-        {Array.from({ length: total }).map((_, i) => (
-          <button key={i} onClick={() => setIdx(i)} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? 'bg-accent' : 'bg-gray-300'}`} />
-        ))}
-        <button onClick={next} className="w-6 h-6 rounded-full bg-white hover:bg-accent/10 border border-card-border flex items-center justify-center transition-colors"><ChevronRight className="h-3 w-3 text-muted" /></button>
-      </div>
-    </div>
-  );
-}
-
-function HardwarePanel({ active }: { active: boolean }) {
-  const [sliderPos, setSliderPos] = useState(50);
-  return (
-    <div className="absolute inset-0 flex items-center justify-center px-6">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000005_1px,transparent_1px),linear-gradient(to_bottom,#00000005_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none" />
-      <div className="w-full max-w-6xl flex flex-col gap-5">
-        <div className="text-left">
-          <ScatterItem active={active} yOffset={-40} delay={0.05}>
-            <span className="text-[10px] font-bold text-accent uppercase tracking-widest">02 / Hardware</span>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={-80} delay={0.1}>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-ink uppercase mt-1">El Laboratorio de <span className="text-accent">Reparaciones</span></h2>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={80} delay={0.15}>
-            <p className="text-sm text-muted mt-1.5 max-w-lg">Microsoldaduras SMD, cambios de pantalla y repuestos Grado A+.</p>
-          </ScatterItem>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[54vh]">
-
-          {/* Video */}
-          <ScatterItem active={active} xOffset={-120} delay={0.2} className="lg:col-span-5 h-full">
-            <div className="bg-card border border-card-border rounded-3xl p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-accent/25 transition-all duration-300 h-full shadow-sm">
-              <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(#1E40AF_0.8px,transparent_0.8px)] bg-[size:14px_14px] pointer-events-none" />
-              <div>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">Timelapse · Reparación</span>
-                <h3 className="text-base font-bold text-ink mt-2 uppercase">Soldadura y Microelectrónica</h3>
-                <p className="text-[10px] text-muted mt-0.5">Placa base, pistas y cambio de ICs.</p>
-              </div>
-              <div className="flex-1 rounded-2xl bg-gray-50 border border-card-border relative overflow-hidden flex items-center justify-center group/v cursor-pointer min-h-[120px]">
-                <img src={logo4} alt="" className="absolute inset-0 w-full h-full object-contain opacity-10 scale-125 blur-sm" />
-                <div className="absolute inset-0 bg-white/40" />
-                <div className="relative z-10 flex flex-col items-center gap-2">
-                  <div className="relative">
-                    <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0, 0.4] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 border border-accent rounded-full" />
-                    <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.2, 0, 0.2] }} transition={{ duration: 2, repeat: Infinity, delay: 0.4 }} className="absolute inset-[-8px] border border-accent/30 rounded-full" />
-                    <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center group-hover/v:scale-110 transition-transform shadow-lg shadow-accent/20">
-                      <Play className="h-5 w-5 text-white fill-white translate-x-0.5" />
-                    </div>
-                  </div>
-                  <span className="text-[9px] text-muted font-mono">Ver proceso completo</span>
-                </div>
-                <span className="absolute bottom-2 right-2 text-[7px] font-mono text-muted bg-white/80 px-2 py-0.5 rounded border border-card-border">02:34 · HD</span>
-              </div>
-            </div>
-          </ScatterItem>
-
-          {/* Slider */}
-          <ScatterItem active={active} yOffset={120} delay={0.25} className="lg:col-span-3 h-full">
-            <div className="bg-card border border-card-border rounded-3xl p-5 flex flex-col gap-3 group hover:border-accent/25 transition-all duration-300 h-full shadow-sm">
-              <div>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-muted bg-gray-100 border border-card-border px-2.5 py-1 rounded-full">Antes → Después</span>
-                <h3 className="text-base font-bold text-ink mt-2 uppercase">Arrastra</h3>
-              </div>
-              <div className="flex-1 flex items-center justify-center">
-                <BeforeAfterSlider pos={sliderPos} setPos={setSliderPos} />
-              </div>
-            </div>
-          </ScatterItem>
-
-          {/* Carrusel */}
-          <ScatterItem active={active} xOffset={120} delay={0.3} className="lg:col-span-4 h-full">
-            <div className="bg-card border border-card-border rounded-3xl p-5 flex flex-col gap-3 group hover:border-accent/25 transition-all duration-300 h-full justify-between shadow-sm">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-muted bg-gray-100 border border-card-border px-2.5 py-1 rounded-full">Accesorios · Stock</span>
-                  <h3 className="text-base font-bold text-ink mt-2 uppercase">Repuestos Grado A+</h3>
-                </div>
-                <Wrench className="h-4 w-4 text-muted group-hover:text-accent transition-colors mt-1" />
-              </div>
-              <div className="flex-grow flex flex-col justify-center py-2"><HwCarousel /></div>
-              <Link to="/hardware/repuestos" className="w-full flex items-center justify-center gap-2 bg-beige border border-card-border hover:border-accent/30 text-ink text-[10px] font-bold py-2.5 rounded-xl transition-all">
-                Ver catálogo <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </ScatterItem>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// PANEL 3 — ELECTRICIDAD
-// ─────────────────────────────────────────────────────────────
-const ELEC_ITEMS = [
-  { icon: Camera,  title: 'Cámaras IP 4K',          desc: 'Vigilancia 24/7 con visión nocturna y detección IA.' },
-  { icon: Zap,     title: 'Tableros Eléctricos',     desc: 'Instalación y mantenimiento normado SEC.' },
-  { icon: Shield,  title: 'Control de Acceso',       desc: 'Biometría, tarjetas RFID y cerraduras magnéticas.' },
-  { icon: Globe,   title: 'Cableado Estructurado',   desc: 'Redes Cat 6A/7 para oficinas y hogares.' },
-  { icon: Wrench,  title: 'Mantenimiento Eléctrico', desc: 'Diagnóstico y reparación de instalaciones.' },
-  { icon: Camera,  title: 'DVR / NVR',               desc: 'Sistemas de grabación local y en la nube.' },
-];
-const ALL_ELEC = [...ELEC_ITEMS, ...ELEC_ITEMS, ...ELEC_ITEMS];
-
-function ElecPhotoCarousel() {
-  const [idx, setIdx] = useState(0);
-  const PHOTOS = [
-    { label: 'Panel eléctrico residencial' },
-    { label: 'Cámara CCTV instalada' },
-    { label: 'Cableado ordenado categoría 6' },
-    { label: 'Tablero industrial trifásico' },
-  ];
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % PHOTOS.length), 3000);
-    return () => clearInterval(t);
-  }, []);
-
-  return (
-    <div className="relative w-full max-w-md mx-auto overflow-hidden rounded-2xl border border-card-border aspect-video bg-white shadow-lg">
-      <AnimatePresence mode="wait">
-        <motion.div key={idx} initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ duration: 0.5 }} className="absolute inset-0">
-          <img src={logo4} alt="" className="w-full h-full object-contain bg-gray-50 p-4" />
-          <div className="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent" />
-          <span className="absolute bottom-3 left-3 text-[10px] font-bold text-white uppercase tracking-wider">{PHOTOS[idx].label}</span>
-        </motion.div>
-      </AnimatePresence>
-      <div className="absolute bottom-2 right-3 flex gap-1">
-        {PHOTOS.map((_, i) => (
-          <button key={i} onClick={() => setIdx(i)} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? 'bg-accent' : 'bg-white/60'}`} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ElectricityPanel({ active }: { active: boolean }) {
-  return (
-    <div className="absolute inset-0 flex flex-col justify-center">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/3 rounded-full blur-[120px] pointer-events-none" />
-      <div className="relative z-10 w-full space-y-7">
-        <div className="text-center px-6 space-y-2">
-          <ScatterItem active={active} yOffset={-50} delay={0.05}>
-            <span className="text-[10px] font-bold text-accent uppercase tracking-widest">03 / Electricidad & CCTV</span>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={-80} delay={0.1}>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-ink uppercase">Infraestructura que <span className="text-accent">Protege</span></h2>
-          </ScatterItem>
-          <ScatterItem active={active} xOffset={80} delay={0.15}>
-            <p className="text-sm text-muted max-w-md mx-auto">Instalaciones eléctricas normadas y sistemas de videovigilancia para tu hogar o empresa.</p>
-          </ScatterItem>
-        </div>
-
-        <ScatterItem active={active} yOffset={80} delay={0.2} className="px-6 flex justify-center">
-          <ElecPhotoCarousel />
-        </ScatterItem>
-
-        <ScatterItem active={active} xOffset={-150} delay={0.25}>
-          <div className="relative overflow-hidden border-t border-b border-card-border py-3 bg-white/60 select-none">
-            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-beige to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-beige to-transparent z-10 pointer-events-none" />
-            <div className="flex w-max gap-4 animate-marquee hover:[animation-play-state:paused]">
-              {ALL_ELEC.map((item, i) => (
-                <motion.div key={i} whileHover={{ scale: 1.05, borderColor: 'rgba(30,64,175,0.35)' }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className="w-[220px] flex-shrink-0 bg-card border border-card-border rounded-2xl p-4 flex flex-col gap-3 text-left group cursor-pointer hover:shadow-md animate-none">
-                  <div className="w-8 h-8 rounded-xl bg-beige border border-card-border flex items-center justify-center text-muted group-hover:text-accent group-hover:border-accent/30 transition-all">
-                    <item.icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-[10px] font-bold text-ink uppercase group-hover:text-accent transition-colors tracking-wider">{item.title}</h3>
-                    <p className="text-[9px] text-muted mt-1 leading-relaxed">{item.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          {/* ── RIGHT PANEL — Device Mockup ── */}
+          <div className="flex-shrink-0 flex items-center justify-center order-1 lg:order-2 relative">
+            <AnimatePresence mode="wait">
+              <motion.div key={`device-${activeCategory}`}
+                initial={{ opacity: 0, scale: 0.88, x: 60, filter: 'blur(14px)' }}
+                animate={{ opacity: 1, scale: 1, x: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 0.92, x: 40, filter: 'blur(10px)' }}
+                transition={{ duration: 0.55, ease: 'easeInOut' }}
+              >
+                {activeCategory === 'celulares'    && <CelularesDevice />}
+                {activeCategory === 'software'     && <SoftwareDevice />}
+                {activeCategory === 'electricidad' && <ElectricidadDevice />}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </ScatterItem>
-
-        <ScatterItem active={active} xOffset={150} delay={0.3} className="flex justify-center gap-4 px-6">
-          <Link to="/electricidad/camaras" className="inline-flex items-center gap-2 bg-accent hover:bg-accent-light text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-lg shadow-accent/15">
-            Ver cámaras <Camera className="h-4 w-4" />
-          </Link>
-          <Link to="/electricidad/instalaciones" className="inline-flex items-center gap-2 bg-white border border-card-border hover:border-accent/30 text-ink font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm">
-            Instalaciones <Zap className="h-4 w-4" />
-          </Link>
-        </ScatterItem>
+        </div>
       </div>
-    </div>
-  );
-}
 
-// ─────────────────────────────────────────────────────────────
-// CONTROLADOR PRINCIPAL — crossfade + blur cinematográfico
-// ─────────────────────────────────────────────────────────────
-const PANEL_SCROLL_HEIGHTS = [1.5, 2.5, 2.0, 1.8];
-const TOTAL_HEIGHT = PANEL_SCROLL_HEIGHTS.reduce((a, b) => a + b, 0);
-
-const panelStart = (idx: number) =>
-  PANEL_SCROLL_HEIGHTS.slice(0, idx).reduce((a, b) => a + b, 0) / TOTAL_HEIGHT;
-const panelEnd   = (idx: number) => panelStart(idx) + PANEL_SCROLL_HEIGHTS[idx] / TOTAL_HEIGHT;
-
-function panelOpacity(progress: number, idx: number): number {
-  const start = panelStart(idx);
-  const end   = panelEnd(idx);
-  const fadeLen = 0.04;
-
-  const fadeInEnd   = start + fadeLen;
-  const fadeOutStart = end - fadeLen;
-
-  if (idx === 0) {
-    if (progress < fadeOutStart) return 1;
-    if (progress < end) return 1 - (progress - fadeOutStart) / fadeLen;
-    return 0;
-  }
-
-  if (idx === 3) {
-    if (progress < start) return 0;
-    if (progress < fadeInEnd) return (progress - start) / fadeLen;
-    return 1;
-  }
-
-  if (progress < start) return 0;
-  if (progress < fadeInEnd) return (progress - start) / fadeLen;
-  if (progress < fadeOutStart) return 1;
-  if (progress < end) return 1 - (progress - fadeOutStart) / fadeLen;
-  return 0;
-}
-
-function localProgress(progress: number, idx: number): number {
-  const start = panelStart(idx);
-  const end   = panelEnd(idx);
-  if (progress <= start) return 0;
-  if (progress >= end) return 1;
-  return (progress - start) / (end - start);
-}
-
-export default function Home() {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: wrapperRef, offset: ['start start', 'end end'] });
-
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    return scrollYProgress.on('change', v => setProgress(v));
-  }, [scrollYProgress]);
-
-  const op = [0, 1, 2, 3].map(i => panelOpacity(progress, i));
-  const lp = [0, 1, 2, 3].map(i => localProgress(progress, i));
-
-  const blurs = op.map(o => (1 - o) * 18);
-
-  const activeIdx = op.indexOf(Math.max(...op));
-  const isPanelActive = (idx: number) => activeIdx === idx && op[idx] > 0.15;
-
-  return (
-    <div
-      ref={wrapperRef}
-      className="relative bg-beige text-ink selection:bg-accent selection:text-white"
-      style={{ height: `${TOTAL_HEIGHT * 100}vh` }}
-    >
-      <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-hidden bg-beige">
-
-        <div
-          className="absolute inset-0 transition-all duration-750 ease-out"
-          style={{
-            opacity: op[0],
-            filter: `blur(${blurs[0]}px)`,
-            pointerEvents: op[0] > 0.1 ? 'auto' : 'none',
-            willChange: 'opacity, filter',
-            transform: 'translate3d(0, 0, 0)'
-          }}
-        >
-          <HeroPanel active={isPanelActive(0)} />
-        </div>
-
-        <div
-          className="absolute inset-0 transition-all duration-750 ease-out"
-          style={{
-            opacity: op[1],
-            filter: `blur(${blurs[1]}px)`,
-            pointerEvents: op[1] > 0.1 ? 'auto' : 'none',
-            willChange: 'opacity, filter',
-            transform: 'translate3d(0, 0, 0)'
-          }}
-        >
-          <SoftwarePanel active={isPanelActive(1)} scrollProgress={lp[1]} />
-        </div>
-
-        <div
-          className="absolute inset-0 transition-all duration-750 ease-out"
-          style={{
-            opacity: op[2],
-            filter: `blur(${blurs[2]}px)`,
-            pointerEvents: op[2] > 0.1 ? 'auto' : 'none',
-            willChange: 'opacity, filter',
-            transform: 'translate3d(0, 0, 0)'
-          }}
-        >
-          <HardwarePanel active={isPanelActive(2)} />
-        </div>
-
-        <div
-          className="absolute inset-0 transition-all duration-750 ease-out"
-          style={{
-            opacity: op[3],
-            filter: `blur(${blurs[3]}px)`,
-            pointerEvents: op[3] > 0.1 ? 'auto' : 'none',
-            willChange: 'opacity, filter',
-            transform: 'translate3d(0, 0, 0)'
-          }}
-        >
-          <ElectricityPanel active={isPanelActive(3)} />
-        </div>
-
-        {/* Indicador de progreso lateral */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-50">
-          {['Hero', 'Software', 'Hardware', 'Electricidad'].map((label, i) => (
-            <div key={i} className="flex items-center gap-2 group cursor-default">
-              <span className={`text-[9px] font-bold uppercase tracking-widest transition-all duration-300 ${op[i] > 0.5 ? 'text-accent opacity-100' : 'text-muted opacity-0 group-hover:opacity-100'}`}>
-                {label}
-              </span>
-              <div className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${op[i] > 0.5 ? 'bg-accent scale-125 shadow-[0_0_6px_#1E40AF]' : 'bg-gray-300'}`} />
-            </div>
-          ))}
+      {/* ── BOTTOM DOCK NAVIGATION ── */}
+      <div className="relative z-20 w-full flex justify-center pb-8 pt-2">
+        <div className="bg-neutral-950/70 backdrop-blur-2xl border border-white/10 px-2 py-2 rounded-3xl flex items-center gap-1.5 shadow-2xl shadow-black/60">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeCategory === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveCategory(item.id)}
+                className="relative px-4 sm:px-5 py-3 rounded-2xl flex items-center gap-2.5 text-xs sm:text-sm font-bold transition-all duration-300 focus:outline-none cursor-pointer"
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="active-dock-pill"
+                    className={`absolute inset-0 rounded-2xl -z-10 ${
+                      item.id === 'celulares'    ? 'bg-gradient-to-r from-cyan-600/70 to-blue-700/70 shadow-[0_0_20px_rgba(6,182,212,0.35)]'
+                      : item.id === 'software'  ? 'bg-gradient-to-r from-blue-700/70 to-indigo-700/70 shadow-[0_0_20px_rgba(59,130,246,0.35)]'
+                      : 'bg-gradient-to-r from-cyan-700/70 to-sky-600/70 shadow-[0_0_20px_rgba(56,189,248,0.35)]'
+                    }`}
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Icon className={`w-4 h-4 transition-colors ${
+                  isActive
+                    ? item.id === 'celulares' ? 'text-cyan-300'
+                      : item.id === 'software' ? 'text-blue-300'
+                      : 'text-sky-300'
+                    : 'text-neutral-500'
+                }`} />
+                <span className={`hidden sm:inline transition-colors ${isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}>
+                  {item.label}
+                </span>
+                <span className={`sm:hidden transition-colors ${isActive ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}>
+                  {item.shortLabel}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
